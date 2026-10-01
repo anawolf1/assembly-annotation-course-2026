@@ -20,7 +20,7 @@ ERR11437340.fastq.gz
 
 ### RNA-seq dataset
 
-I also was provided with  an Illumina RNA-seq dataset from the Arabidopsis thaliana accession Sha:
+I also was provided with an Illumina RNA-seq dataset from the Arabidopsis thaliana accession Sha:
 
 ```text
 ERR754081_1.fastq.gz
@@ -38,14 +38,17 @@ assembly-annotation-course-2026/
 ├── scripts/
 │   ├── 01_run_fastqc.sh
 │   ├── 02_run_fastp.sh
-│   └── 03_kmer_counting.sh
+│   ├── 03_run_fastp_pacbio.sh
+│   ├── 04_flye_assembly.sh
+│   ├── 05_hifiasm_assembly.sh
+│   └── 06_lja_assembly.sh
 ├── read_QC/
 │   ├── fastqc/
 │   ├── fastp/
 │   └── kmer_counting/
 ├── assemblies/
-├── Rab-R1      #course raw data
-└── RNAseq_Sha  #course raw data
+├── Rab-R1      # course raw data
+└── RNAseq_Sha  # course raw data
 ```
 
 ## Reproducibility
@@ -92,17 +95,58 @@ scripts/01_run_fastqc.sh
 
 ### 2. Read filtering and trimming
 
-`fastp` will be used to:
+`fastp` is used to:
 
 * filter and trim the Illumina RNA-seq reads
 * assess changes in read quality
 * obtain the total number of bases in the PacBio HiFi dataset without filtering
 
-The analysis will be performed by:
+The Illumina RNA-seq analysis is performed by:
 
 ```text
 scripts/02_run_fastp.sh
 ```
+
+The PacBio analysis is performed by:
+
+```text
+scripts/03_run_fastp_pacbio.sh
+```
+
+#### RNA-seq fastp results
+
+Before filtering, each RNA-seq mate contained:
+
+* **22,620,680 reads**
+* **2,284,688,680 bases**
+* Q20 bases: **88.25%**
+* Q30 bases: **76.19%**
+
+After filtering, each mate contained:
+
+* **20,352,421 reads**
+* **2,043,758,461 bases**
+* Q20 bases: **94.60%**
+* Q30 bases: **86.32%**
+
+Across both mates, fastp reported:
+
+* **40,704,842 reads passed the filters**
+* **4,536,276 reads failed due to low quality**
+* **242 reads failed due to too many Ns**
+* **0 reads failed due to being too short**
+* **2,131,136 reads had adapter trimming**
+* **24,329,968 bases were trimmed due to adapters**
+* Duplication rate: **6.61%**
+* Insert size peak: **136 bp**
+
+The filtered RNA-seq reads are written to:
+
+```text
+read_QC/fastp/
+```
+
+The fastp HTML and JSON reports are also stored in this directory.
 
 ### 3. Expected PacBio coverage
 
@@ -114,7 +158,7 @@ coverage = total sequenced bases / expected genome size
 
 The Arabidopsis thaliana genome is approximately 135 Mb.
 
-The total number of PacBio bases will be obtained during the fastp analysis.
+The total number of PacBio bases will be obtained from the fastp analysis without filtering.
 
 ### 4. K-mer counting
 
@@ -127,29 +171,47 @@ The workflow will:
 3. Generate a k-mer histogram.
 4. Analyze the histogram using GenomeScope 2.0.
 
-The analysis will be performed by:
+The Jellyfish analysis will be documented in a separate script once the k-mer counting step is completed.
+
+## Genome assembly
+
+Genome assemblies will be generated using several assemblers and compared as part of the course analysis.
+
+The planned assembly tools are:
+
+* Flye
+* hifiasm
+* LJA
+
+The corresponding scripts are:
 
 ```text
-scripts/03_kmer_counting.sh
+scripts/04_flye_assembly.sh
+scripts/05_hifiasm_assembly.sh
+scripts/06_lja_assembly.sh
 ```
+
+Assembly results will be evaluated using assembly statistics and other quality measures as required by the course.
 
 ## Week 1 results
 
-Results will be added after each analysis is completed.
-
-| Metric                            | Result  |
-| --------------------------------- | ------- |
-| PacBio read length                | TBD     |
-| Illumina read length              | TBD     |
-| RNA-seq reads trimmed/filtered    | TBD     |
-| RNA-seq quality before filtering  | TBD     |
-| RNA-seq quality after filtering   | TBD     |
-| PacBio total bases                | TBD     |
-| Expected genome size              | ~135 Mb |
-| Expected PacBio coverage          | TBD     |
-| GenomeScope estimated genome size | TBD     |
-| GenomeScope heterozygosity        | TBD     |
-| GenomeScope coverage              | TBD     |
+| Metric                            | Result              |
+| --------------------------------- | ------------------- |
+| PacBio read length                | TBD                 |
+| Illumina read length              | TBD                 |
+| RNA-seq reads before filtering    | 22,620,680 per mate |
+| RNA-seq reads after filtering     | 20,352,421 per mate |
+| RNA-seq reads filtered            | 4,536,518 combined  |
+| RNA-seq Q20 before filtering      | 88.25%              |
+| RNA-seq Q20 after filtering       | 94.60%              |
+| RNA-seq Q30 before filtering      | 76.19%              |
+| RNA-seq Q30 after filtering       | 86.32%              |
+| PacBio total bases                | TBD                 |
+| Expected genome size              | ~135 Mb             |
+| Expected PacBio coverage          | TBD                 |
+| GenomeScope estimated genome size | TBD                 |
+| GenomeScope heterozygosity        | TBD                 |
+| GenomeScope coverage              | TBD                 |
 
 ## Questions
 
