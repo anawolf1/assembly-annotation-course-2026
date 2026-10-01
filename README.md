@@ -250,8 +250,6 @@ The main observed k-mer peak is around **40×**, while GenomeScope reports a mea
 
 The GenomeScope k-mer profile is shown below:
 
-<img width="2000" height="2000" alt="histogram" src="https://github.com/user-attachments/assets/375b0758-7568-4a43-8019-5b7144a1f258" />
-
 ## Genome assembly
 
 Genome assemblies will be generated using several assemblers and compared as part of the course analysis.
