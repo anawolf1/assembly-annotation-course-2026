@@ -76,7 +76,7 @@ The first week focuses on sequencing reads, quality control, and k-mer analysis.
 
 ### 1. Basic read statistics
 
-FastQC is used to assess the quality and characteristics of:
+FastQC was used to assess the quality and characteristics of:
 
 * PacBio HiFi whole-genome reads from Rab-R1
 * Illumina RNA-seq reads from Sha
@@ -87,11 +87,23 @@ The FastQC module used is:
 FastQC/0.11.9-Java-11
 ```
 
-The analysis is performed by:
+The analysis was performed by:
 
 ```text
 scripts/01_run_fastqc.sh
 ```
+
+#### FastQC results
+
+| Dataset                  | Total reads |  Read length |  GC |
+| ------------------------ | ----------: | -----------: | --: |
+| PacBio `ERR11437340`     |     556,708 | 56–39,423 bp | 37% |
+| RNA-seq R1 `ERR754081_1` |  22,620,680 |       101 bp | 46% |
+| RNA-seq R2 `ERR754081_2` |  22,620,680 |       101 bp | 46% |
+
+The FastQC **Basic Statistics** module passed for all three datasets.
+
+The PacBio reads have a broad read-length distribution, as expected for long-read sequencing, whereas the RNA-seq reads are uniformly 101 bp.
 
 ### 2. Read filtering and trimming
 
@@ -148,21 +160,42 @@ read_QC/fastp/
 
 The fastp HTML and JSON reports are also stored in this directory.
 
+#### PacBio fastp results
+
+The PacBio HiFi reads were processed with `fastp` without adapter trimming, quality filtering, or length filtering. The output reads were discarded to `/dev/null` because the purpose of this step was to obtain sequencing statistics rather than produce a filtered FASTQ file.
+
+Results:
+
+* **556,708 reads**
+* **8,455,889,868 total bases (~8.46 Gb)**
+* Q20 bases: **8,334,149,991 (98.56%)**
+* Q30 bases: **8,170,018,339 (96.62%)**
+
 ### 3. Expected PacBio coverage
 
-The expected sequencing coverage will be estimated using:
+The expected sequencing coverage was estimated using:
 
 ```text
 coverage = total sequenced bases / expected genome size
 ```
 
-The Arabidopsis thaliana genome is approximately 135 Mb.
+Using an approximate *Arabidopsis thaliana* genome size of 135 Mb:
 
-The total number of PacBio bases will be obtained from the fastp analysis without filtering.
+```text
+8,455,889,868 / 135,000,000 ≈ 62.6×
+```
+
+Therefore, the expected PacBio sequencing coverage is approximately **62.6×**.
 
 ### 4. K-mer counting
 
 K-mers will be counted from the PacBio HiFi reads using Jellyfish.
+
+The Jellyfish version available on the cluster is:
+
+```text
+Jellyfish/2.3.0-GCC-10.3.0
+```
 
 The workflow will:
 
@@ -195,23 +228,25 @@ Assembly results will be evaluated using assembly statistics and other quality m
 
 ## Week 1 results
 
-| Metric                            | Result              |
-| --------------------------------- | ------------------- |
-| PacBio read length                | TBD                 |
-| Illumina read length              | TBD                 |
-| RNA-seq reads before filtering    | 22,620,680 per mate |
-| RNA-seq reads after filtering     | 20,352,421 per mate |
-| RNA-seq reads filtered            | 4,536,518 combined  |
-| RNA-seq Q20 before filtering      | 88.25%              |
-| RNA-seq Q20 after filtering       | 94.60%              |
-| RNA-seq Q30 before filtering      | 76.19%              |
-| RNA-seq Q30 after filtering       | 86.32%              |
-| PacBio total bases                | TBD                 |
-| Expected genome size              | ~135 Mb             |
-| Expected PacBio coverage          | TBD                 |
-| GenomeScope estimated genome size | TBD                 |
-| GenomeScope heterozygosity        | TBD                 |
-| GenomeScope coverage              | TBD                 |
+| Metric                            | Result                      |
+| --------------------------------- | --------------------------- |
+| PacBio read length                | 56–39,423 bp                |
+| Illumina read length              | 101 bp                      |
+| RNA-seq reads before filtering    | 22,620,680 per mate         |
+| RNA-seq reads after filtering     | 20,352,421 per mate         |
+| RNA-seq reads filtered            | 4,536,518 combined          |
+| RNA-seq Q20 before filtering      | 88.25%                      |
+| RNA-seq Q20 after filtering       | 94.60%                      |
+| RNA-seq Q30 before filtering      | 76.19%                      |
+| RNA-seq Q30 after filtering       | 86.32%                      |
+| PacBio total bases                | 8,455,889,868 bp (~8.46 Gb) |
+| PacBio Q20                        | 98.56%                      |
+| PacBio Q30                        | 96.62%                      |
+| Expected genome size              | ~135 Mb                     |
+| Expected PacBio coverage          | ~62.6×                      |
+| GenomeScope estimated genome size | TBD                         |
+| GenomeScope heterozygosity        | TBD                         |
+| GenomeScope coverage              | TBD                         |
 
 ## Questions
 
@@ -222,9 +257,13 @@ Assembly results will be evaluated using assembly statistics and other quality m
 * How many RNA-seq reads were trimmed or filtered?
 * Did the quality improve after filtering?
 
+The FastQC Basic Statistics module passed for all three input datasets. For the RNA-seq data, Q20 increased from 88.25% to 94.60% and Q30 increased from 76.19% to 86.32% after filtering, indicating an improvement in the quality of the retained reads.
+
 ### PacBio coverage
 
-The expected PacBio coverage will be calculated from the total number of sequenced bases and the expected Arabidopsis thaliana genome size.
+The expected PacBio coverage was calculated from the total number of sequenced bases and the expected *Arabidopsis thaliana* genome size.
+
+The estimated coverage is approximately **62.6×**.
 
 ### GenomeScope
 
@@ -235,7 +274,7 @@ The k-mer histogram will be analyzed with GenomeScope 2.0 to estimate:
 * sequencing coverage
 * repeat content
 
-The estimates will be compared with the expected properties of the Arabidopsis thaliana genome and the observed sequencing data.
+The estimates will be compared with the expected properties of the *Arabidopsis thaliana* genome and the observed sequencing data.
 
 ### Canonical k-mers
 
@@ -243,7 +282,7 @@ Canonical k-mers treat a k-mer and its reverse complement as the same k-mer. Thi
 
 ## References
 
-Lian, Q. et al. (2024). A pan-genome of 69 Arabidopsis thaliana accessions reveals a conserved genome structure throughout the global species range. *Nature Genetics*, 56, 982–991.
+Lian, Q. et al. (2024). A pan-genome of 69 *Arabidopsis thaliana* accessions reveals a conserved genome structure throughout the global species range. *Nature Genetics*, 56, 982–991.
 
 Jiao, W. B. & Schneeberger, K. (2020). Chromosome-level assemblies of multiple Arabidopsis genomes reveal hotspots of rearrangements with altered evolutionary dynamics. *Nature Communications*, 11.
 
