@@ -222,7 +222,35 @@ The main k-mer histogram peak occurs at approximately **40× k-mer multiplicity*
 
 The weighted mean k-mer multiplicity calculated from the histogram is approximately **61.57×**.
 
-The 40× value represents the main observed peak in the k-mer histogram and should not be confused with the final GenomeScope coverage estimate.
+The 40× value represents the main observed peak in the k-mer histogram and should not be confused with the GenomeScope mean k-mer coverage estimate.
+
+## GenomeScope 2.0
+
+The k-mer histogram was analyzed using GenomeScope 2.0 with:
+
+* **k-mer size:** 21
+* **Ploidy:** 2
+
+GenomeScope estimated:
+
+| Metric                  |    Result |
+| ----------------------- | --------: |
+| Estimated genome size   | ~144.6 Mb |
+| Unique sequence content |     72.8% |
+| Heterozygosity          |     0.11% |
+| Mean k-mer coverage     |     20.4× |
+| Sequencing error rate   |    0.174% |
+| Duplication rate        |     0.176 |
+
+The estimated genome size of approximately **144.6 Mb** is somewhat larger than the approximate **135 Mb** genome size expected for *Arabidopsis thaliana*.
+
+The estimated heterozygosity of **0.11%** indicates a low level of heterozygosity. This is consistent with the small heterozygous shoulder observed around **20×** in the k-mer profile.
+
+The main observed k-mer peak is around **40×**, while GenomeScope reports a mean k-mer coverage of **20.4×**. These values describe different aspects of the k-mer distribution and should not be treated as interchangeable.
+
+The GenomeScope k-mer profile is shown below:
+
+<img width="2000" height="2000" alt="histogram" src="https://github.com/user-attachments/assets/375b0758-7568-4a43-8019-5b7144a1f258" />
 
 ## Genome assembly
 
@@ -264,9 +292,9 @@ Assembly results will be evaluated using assembly statistics and other quality m
 | Expected PacBio coverage          | ~62.6×                      |
 | Main k-mer peak (k=21)            | ~40×                        |
 | Weighted mean k-mer multiplicity  | 61.57×                      |
-| GenomeScope estimated genome size | TBD                         |
-| GenomeScope heterozygosity        | TBD                         |
-| GenomeScope coverage              | TBD                         |
+| GenomeScope estimated genome size | ~144.6 Mb                   |
+| GenomeScope heterozygosity        | 0.11%                       |
+| GenomeScope mean k-mer coverage   | 20.4×                       |
 
 ## Questions
 
@@ -281,7 +309,7 @@ The FastQC Basic Statistics module passed for all three input datasets. For the 
 
 Across both RNA-seq mates, **4,536,518 reads failed filtering**, consisting of 4,536,276 reads failing due to low quality and 242 reads failing due to too many Ns.
 
-Adapter trimming was reported separately by fastp: 2,131,136 reads had adapter trimming and 24,329,968 adapter bases were removed.
+Adapter trimming was reported separately by fastp: **2,131,136 reads** had adapter trimming and **24,329,968 adapter bases** were removed.
 
 ### PacBio coverage
 
@@ -291,14 +319,13 @@ The estimated coverage is approximately **62.6×**.
 
 ### GenomeScope
 
-The k-mer histogram will be analyzed with GenomeScope 2.0 to estimate:
+The k-mer histogram was analyzed with GenomeScope 2.0 using a k-mer size of 21 and a diploid model.
 
-* genome size
-* heterozygosity
-* sequencing coverage
-* repeat content
+GenomeScope estimated a genome size of approximately **144.6 Mb**, compared with the approximate expected *Arabidopsis thaliana* genome size of **135 Mb**.
 
-The current k-mer histogram has a main peak at approximately **40×**. GenomeScope estimates will be added once the GenomeScope analysis has been completed.
+The estimated heterozygosity was **0.11%**, and the mean k-mer coverage estimated by GenomeScope was **20.4×**.
+
+The main observed k-mer histogram peak was approximately **40×**.
 
 ### Canonical k-mers
 
@@ -311,6 +338,9 @@ The Jellyfish k-mer counting step used the `-C` option to count canonical k-mers
 Lian, Q. et al. (2024). A pan-genome of 69 *Arabidopsis thaliana* accessions reveals a conserved genome structure throughout the global species range. *Nature Genetics*, 56, 982–991.
 
 Jiao, W. B. & Schneeberger, K. (2020). Chromosome-level assemblies of multiple Arabidopsis genomes reveal hotspots of rearrangements with altered evolutionary dynamics. *Nature Communications*, 11.
+
+GenomeScope 2.0.
+
 
 GenomeScope 2.0.
 
