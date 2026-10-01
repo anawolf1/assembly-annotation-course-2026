@@ -1,0 +1,16 @@
+Rab-R1
+RNAseq_Sha
+
+*.fastq
+*.fastq.gz
+*.fq
+*.fq.gz
+
+read_QC/fastqc/
+read_QC/fastp/
+read_QC/kmer_counting/
+
+assemblies/
+
+*.o
+*.e
