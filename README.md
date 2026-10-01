@@ -41,7 +41,8 @@ assembly-annotation-course-2026/
 │   ├── 03_run_fastp_pacbio.sh
 │   ├── 04_flye_assembly.sh
 │   ├── 05_hifiasm_assembly.sh
-│   └── 06_lja_assembly.sh
+│   ├── 06_lja_assembly.sh
+│   └── 07_run_jellyfish.sh
 ├── read_QC/
 │   ├── fastqc/
 │   ├── fastp/
@@ -107,7 +108,7 @@ The PacBio reads have a broad read-length distribution, as expected for long-rea
 
 ### 2. Read filtering and trimming
 
-`fastp` is used to:
+`fastp` was used to:
 
 * filter and trim the Illumina RNA-seq reads
 * assess changes in read quality
@@ -189,7 +190,7 @@ Therefore, the expected PacBio sequencing coverage is approximately **62.6×**.
 
 ### 4. K-mer counting
 
-K-mers will be counted from the PacBio HiFi reads using Jellyfish.
+K-mers were counted from the PacBio HiFi reads using Jellyfish.
 
 The Jellyfish version available on the cluster is:
 
@@ -197,14 +198,31 @@ The Jellyfish version available on the cluster is:
 Jellyfish/2.3.0-GCC-10.3.0
 ```
 
-The workflow will:
+The analysis was performed by:
 
-1. Count k-mers.
-2. Use canonical k-mers.
-3. Generate a k-mer histogram.
-4. Analyze the histogram using GenomeScope 2.0.
+```text
+scripts/07_run_jellyfish.sh
+```
 
-The Jellyfish analysis will be documented in a separate script once the k-mer counting step is completed.
+The workflow:
+
+1. Counted k-mers using a k-mer size of 21.
+2. Used canonical k-mers with the `-C` option.
+3. Generated a k-mer histogram.
+4. Prepared the histogram for GenomeScope 2.0 analysis.
+
+The Jellyfish output files are:
+
+```text
+read_QC/kmer_counting/ERR11437340.k21.jf
+read_QC/kmer_counting/ERR11437340.k21.histo
+```
+
+The main k-mer histogram peak occurs at approximately **40× k-mer multiplicity**.
+
+The weighted mean k-mer multiplicity calculated from the histogram is approximately **61.57×**.
+
+The 40× value represents the main observed peak in the k-mer histogram and should not be confused with the final GenomeScope coverage estimate.
 
 ## Genome assembly
 
@@ -244,6 +262,8 @@ Assembly results will be evaluated using assembly statistics and other quality m
 | PacBio Q30                        | 96.62%                      |
 | Expected genome size              | ~135 Mb                     |
 | Expected PacBio coverage          | ~62.6×                      |
+| Main k-mer peak (k=21)            | ~40×                        |
+| Weighted mean k-mer multiplicity  | 61.57×                      |
 | GenomeScope estimated genome size | TBD                         |
 | GenomeScope heterozygosity        | TBD                         |
 | GenomeScope coverage              | TBD                         |
@@ -258,6 +278,10 @@ Assembly results will be evaluated using assembly statistics and other quality m
 * Did the quality improve after filtering?
 
 The FastQC Basic Statistics module passed for all three input datasets. For the RNA-seq data, Q20 increased from 88.25% to 94.60% and Q30 increased from 76.19% to 86.32% after filtering, indicating an improvement in the quality of the retained reads.
+
+Across both RNA-seq mates, **4,536,518 reads failed filtering**, consisting of 4,536,276 reads failing due to low quality and 242 reads failing due to too many Ns.
+
+Adapter trimming was reported separately by fastp: 2,131,136 reads had adapter trimming and 24,329,968 adapter bases were removed.
 
 ### PacBio coverage
 
@@ -274,11 +298,13 @@ The k-mer histogram will be analyzed with GenomeScope 2.0 to estimate:
 * sequencing coverage
 * repeat content
 
-The estimates will be compared with the expected properties of the *Arabidopsis thaliana* genome and the observed sequencing data.
+The current k-mer histogram has a main peak at approximately **40×**. GenomeScope estimates will be added once the GenomeScope analysis has been completed.
 
 ### Canonical k-mers
 
 Canonical k-mers treat a k-mer and its reverse complement as the same k-mer. This reduces redundant counting of the two possible orientations of the same sequence.
+
+The Jellyfish k-mer counting step used the `-C` option to count canonical k-mers.
 
 ## References
 
@@ -286,5 +312,5 @@ Lian, Q. et al. (2024). A pan-genome of 69 *Arabidopsis thaliana* accessions rev
 
 Jiao, W. B. & Schneeberger, K. (2020). Chromosome-level assemblies of multiple Arabidopsis genomes reveal hotspots of rearrangements with altered evolutionary dynamics. *Nature Communications*, 11.
 
-GenomeScope 2.0: http://genomescope.org/genomescope2.0/
+GenomeScope 2.0.
 
