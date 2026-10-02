@@ -11,13 +11,14 @@
 #SBATCH --partition=pibu_el8
 
 WORKDIR=/data/users/awolfruiz/assembly-annotation-course-2026
+INPUT=/data/courses/assembly-annotation-course/raw_data/Rab-R1/ERR11437340.fastq.gz
 
 mkdir -p ${WORKDIR}/assemblies/flye
 
 apptainer exec \
     /containers/apptainer/flye_2.9.5.sif \
     flye \
-    --pacbio-hifi ${WORKDIR}/Rab-R1/ERR11437340.fastq.gz \
+    --pacbio-hifi ${INPUT} \
     --out-dir ${WORKDIR}/assemblies/flye \
     --genome-size 135m \
     --threads ${SLURM_CPUS_PER_TASK}

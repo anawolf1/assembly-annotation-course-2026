@@ -11,6 +11,7 @@
 #SBATCH --partition=pibu_el8
 
 WORKDIR=/data/users/awolfruiz/assembly-annotation-course-2026
+INPUT=/data/courses/assembly-annotation-course/raw_data/Rab-R1/ERR11437340.fastq.gz
 
 mkdir -p ${WORKDIR}/assemblies/hifiasm
 
@@ -19,4 +20,4 @@ apptainer exec \
     hifiasm \
     -o ${WORKDIR}/assemblies/hifiasm/Rab-R1 \
     -t ${SLURM_CPUS_PER_TASK} \
-    ${WORKDIR}/Rab-R1/ERR11437340.fastq.gz
+    ${INPUT}

@@ -11,12 +11,13 @@
 #SBATCH --partition=pibu_el8
 
 WORKDIR=/data/users/awolfruiz/assembly-annotation-course-2026
+INPUT=/data/courses/assembly-annotation-course/raw_data/Rab-R1/ERR11437340.fastq.gz
 
 mkdir -p ${WORKDIR}/assemblies/lja
 
 apptainer exec \
     /containers/apptainer/lja-0.2.sif \
     lja \
-    --reads ${WORKDIR}/Rab-R1/ERR11437340.fastq.gz \
+    --reads ${INPUT} \
     --output-dir ${WORKDIR}/assemblies/lja \
     --threads ${SLURM_CPUS_PER_TASK}
