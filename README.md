@@ -137,7 +137,7 @@ Before filtering, each RNA-seq mate contained:
 
 After filtering, each mate contained:
 
-* **20,352,421 reads**
+* **20,352,4 reads**
 * **2,043,758,461 bases**
 * Q20 bases: **94.60%**
 * Q30 bases: **86.32%**
@@ -249,6 +249,7 @@ The estimated heterozygosity of **0.11%** indicates a low level of heterozygosit
 The main observed k-mer peak is around **40×**, while GenomeScope reports a mean k-mer coverage of **20.4×**. These values describe different aspects of the k-mer distribution and should not be treated as interchangeable.
 
 The GenomeScope k-mer profile is shown below:
+<img width="688" height="713" alt="histogram" src="https://github.com/user-attachments/assets/0004153a-291b-417e-859b-be959e0a269a" />
 
 ## Genome assembly
 
@@ -278,7 +279,7 @@ Assembly results will be evaluated using assembly statistics and other quality m
 | Illumina read length              | 101 bp                      |
 | RNA-seq reads before filtering    | 22,620,680 per mate         |
 | RNA-seq reads after filtering     | 20,352,421 per mate         |
-| RNA-seq reads filtered            | 4,536,518 combined          |
+| RNA-seq reads failed filtering    | 4,536,518 combined          |
 | RNA-seq Q20 before filtering      | 88.25%                      |
 | RNA-seq Q20 after filtering       | 94.60%                      |
 | RNA-seq Q30 before filtering      | 76.19%                      |
