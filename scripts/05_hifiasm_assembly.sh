@@ -16,9 +16,14 @@ INPUT=/data/courses/assembly-annotation-course/raw_data/Rab-R1/ERR11437340.fastq
 mkdir -p ${WORKDIR}/assemblies/hifiasm
 
 apptainer exec \
-    --bind /data/courses/assembly-annotation-course/raw_data:/data/courses/assembly-annotation-course/raw_data \
+    --bind /data \
     /containers/apptainer/hifiasm_0.25.0.sif \
     hifiasm \
     -o ${WORKDIR}/assemblies/hifiasm/Rab-R1 \
     -t ${SLURM_CPUS_PER_TASK} \
     ${INPUT}
+
+# Convert primary contigs from GFA to FASTA
+awk '/^S/{print ">"$2;print $3}' \
+    ${WORKDIR}/assemblies/hifiasm/Rab-R1.bp.p_ctg.gfa \
+    > ${WORKDIR}/assemblies/hifiasm/Rab-R1.bp.p_ctg.fa

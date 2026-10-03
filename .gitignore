@@ -14,3 +14,9 @@ assemblies/
 
 *.o
 *.e
+assemblies/
+assembly_evaluation/
+genome_comparison/
+read_QC/
+*.fastq.gz
+*.meryl/

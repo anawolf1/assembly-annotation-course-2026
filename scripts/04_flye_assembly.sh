@@ -16,7 +16,7 @@ INPUT=/data/courses/assembly-annotation-course/raw_data/Rab-R1/ERR11437340.fastq
 mkdir -p ${WORKDIR}/assemblies/flye
 
 apptainer exec \
-    --bind /data/courses/assembly-annotation-course/raw_data:/data/courses/assembly-annotation-course/raw_data \
+    --bind /data \
     /containers/apptainer/flye_2.9.5.sif \
     flye \
     --pacbio-hifi ${INPUT} \

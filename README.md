@@ -42,7 +42,12 @@ assembly-annotation-course-2026/
 │   ├── 04_flye_assembly.sh
 │   ├── 05_hifiasm_assembly.sh
 │   ├── 06_lja_assembly.sh
-│   └── 07_run_jellyfish.sh
+│   ├── 07_run_jellyfish.sh
+│   ├── 08_trinity_assembly.sh
+│   ├── 09_run_busco.sh
+│   ├── 10_run_quast.sh
+│   ├── 11_run_merqury.sh
+│   └── 12_run_nucmer_mummerplot.sh
 ├── read_QC/
 │   ├── fastqc/
 │   ├── fastp/
@@ -137,7 +142,7 @@ Before filtering, each RNA-seq mate contained:
 
 After filtering, each mate contained:
 
-* **20,352,4 reads**
+* **20,352,421 reads**
 * **2,043,758,461 bases**
 * Q20 bases: **94.60%**
 * Q30 bases: **86.32%**
