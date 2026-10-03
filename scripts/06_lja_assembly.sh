@@ -16,6 +16,7 @@ INPUT=/data/courses/assembly-annotation-course/raw_data/Rab-R1/ERR11437340.fastq
 mkdir -p ${WORKDIR}/assemblies/lja
 
 apptainer exec \
+    --bind /data/courses/assembly-annotation-course/raw_data:/data/courses/assembly-annotation-course/raw_data \
     /containers/apptainer/lja-0.2.sif \
     lja \
     --reads ${INPUT} \
