@@ -16,8 +16,8 @@ WORKDIR=/data/users/awolfruiz/assembly-annotation-course-2026
 OUTDIR=${WORKDIR}/assembly_evaluation/quast
 CONTAINER=/containers/apptainer/quast_5.2.0.sif
 
-REF=/data/courses/assembly-annotation-course/references/YOUR_GENOME.fa
-GFF=/data/courses/assembly-annotation-course/references/YOUR_ANNOTATION.gff
+REF=/data/courses/assembly-annotation-course/references/Arabidopsis_thaliana.TAIR10.dna.toplevel.fa
+GFF=/data/courses/assembly-annotation-course/references/Arabidopsis_thaliana.TAIR10.57.gff3
 
 FLYE=${WORKDIR}/assemblies/flye/assembly.fasta
 HIFIASM=${WORKDIR}/assemblies/hifiasm/Rab-R1.bp.p_ctg.fa

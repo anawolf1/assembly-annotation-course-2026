@@ -16,7 +16,7 @@ WORKDIR=/data/users/awolfruiz/assembly-annotation-course-2026
 OUTDIR=${WORKDIR}/genome_comparison/nucmer
 CONTAINER=/containers/apptainer/mummer4_gnuplot.sif
 
-REF=/data/courses/assembly-annotation-course/references/YOUR_GENOME.fa
+REF=/data/courses/assembly-annotation-course/references/Arabidopsis_thaliana.TAIR10.dna.toplevel.fa
 
 declare -A ASM=(
     [flye]=${WORKDIR}/assemblies/flye/assembly.fasta
