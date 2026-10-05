@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
-#SBATCH --time=1-00:00:00
-#SBATCH --mem=64G
+#SBATCH --time=2-00:00:00
+#SBATCH --mem=128G
 #SBATCH --cpus-per-task=16
 #SBATCH --job-name=lja_Rab-R1
 #SBATCH --mail-user=ana.wolfruiz@students.unibe.ch

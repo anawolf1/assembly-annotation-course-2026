@@ -30,6 +30,8 @@ cd ${OUTDIR}
 # Usage: compare <ref_name> <ref_fasta> <query_name> <query_fasta>
 compare() {
     local PREFIX=${OUTDIR}/${3}_vs_${1}
+    [ -s "$4" ] || { echo "SKIP: $4 missing" >&2; return; }
+    [ -s "${PREFIX}.png" ] && { echo "SKIP: ${PREFIX}.png exists"; return; }
     apptainer exec --bind /data ${CONTAINER} \
         nucmer \
         --prefix=${PREFIX} \

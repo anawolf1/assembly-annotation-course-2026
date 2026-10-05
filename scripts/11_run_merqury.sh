@@ -40,6 +40,7 @@ fi
 
 # 2. Run merqury per assembly (merqury writes to the current directory)
 for NAME in flye hifiasm lja; do
+    if [ -s "${OUTDIR}/${NAME}/${NAME}.qv" ]; then echo "SKIP: ${NAME} already done"; continue; fi
     if [ ! -s "${ASM[$NAME]}" ]; then
         echo "WARNING: ${ASM[$NAME]} missing, skipping ${NAME}" >&2
         continue
