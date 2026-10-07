@@ -2,39 +2,36 @@
 
 ## Overview
 
-This repository contains my work for the Assembly and Annotation course, including analysis scripts, quality control, genome assembly, and annotation steps.
+This repository contains my work for the Assembly and Annotation course, including analysis scripts, quality control, genome and transcriptome assembly, and assembly evaluation.
 
-The analyses are performed on the IBU cluster using SLURM. Scripts are numbered according to their order of execution to make the workflow reproducible.
+The analyses are performed on the IBU cluster using SLURM. Scripts are numbered and should be run in the order listed under [Workflow](#workflow).
 
 ## Dataset
 
-### Assigned accession
-
-**Rab-R1**
+**Assigned accession:** Rab-R1 (*Arabidopsis thaliana*, Madeira genetic group; Lian et al. 2024)
 
 The whole-genome sequencing data for Rab-R1 consist of PacBio HiFi reads:
 
-```text
-ERR11437340.fastq.gz
-```
+- `ERR11437340.fastq.gz`
 
-### RNA-seq dataset
+**RNA-seq dataset:** Illumina paired-end RNA-seq from the *A. thaliana* accession Sha (shared by all course participants):
 
-I also was provided with an Illumina RNA-seq dataset from the Arabidopsis thaliana accession Sha:
+- `ERR754081_1.fastq.gz`
+- `ERR754081_2.fastq.gz`
 
-```text
-ERR754081_1.fastq.gz
-ERR754081_2.fastq.gz
-```
+The raw sequencing data are provided by the course and are not stored in this Git repository. Symbolic links are used to access the course data from the project directory.
 
-The raw sequencing data are provided by the course and are **not stored in this Git repository**. Symbolic links are used to access the course data from the project directory.
+**Reference genome** (for evaluation only): TAIR10 (Col-0), Ensembl release 57
+- `Arabidopsis_thaliana.TAIR10.dna.toplevel.fa`
+- `Arabidopsis_thaliana.TAIR10.57.gff3`
 
 ## Project structure
 
-```text
+```
 assembly-annotation-course-2026/
 ├── README.md
 ├── .gitignore
+├── figures/                       # figures shown in this README
 ├── scripts/
 │   ├── 01_run_fastqc.sh
 │   ├── 02_run_fastp.sh
@@ -48,303 +45,258 @@ assembly-annotation-course-2026/
 │   ├── 10_run_quast.sh
 │   ├── 11_run_merqury.sh
 │   └── 12_run_nucmer_mummerplot.sh
-├── read_QC/
-│   ├── fastqc/
-│   ├── fastp/
-│   └── kmer_counting/
-├── assemblies/
-├── Rab-R1      # course raw data
-└── RNAseq_Sha  # course raw data
+├── read_QC/                       # not tracked (large outputs)
+├── assemblies/                    # not tracked
+├── assembly_evaluation/           # not tracked
+├── genome_comparison/             # not tracked
+├── Rab-R1        # course raw data (symlink)
+└── RNAseq_Sha    # course raw data (symlink)
 ```
+
+## Workflow
+
+| Step | Script | Tool (version) | Purpose |
+|---|---|---|---|
+| 1 | `01_run_fastqc.sh` | FastQC 0.11.9 | Raw read QC |
+| 2 | `02_run_fastp.sh` | fastp 0.23.4 | Trim/filter RNA-seq reads |
+| 3 | `03_run_fastp_pacbio.sh` | fastp 0.23.4 | PacBio read statistics (no filtering) |
+| 4 | `07_run_jellyfish.sh` | Jellyfish 2.3.0 | k-mer counting (k = 21) for GenomeScope 2.0 |
+| 5 | `04_flye_assembly.sh` | Flye 2.9.5 | Genome assembly (repeat graph) |
+| 6 | `05_hifiasm_assembly.sh` | hifiasm 0.25.0 | Genome assembly (string graph) + GFA→FASTA |
+| 7 | `06_lja_assembly.sh` | LJA 0.2 | Genome assembly (multiplex de Bruijn graph) |
+| 8 | `08_trinity_assembly.sh` | Trinity 2.15.1 | De novo transcriptome assembly |
+| 9 | `09_run_busco.sh` | BUSCO 5.7.1 | Gene-space completeness (brassicales_odb10) |
+| 10 | `10_run_quast.sh` | QUAST 5.2.0 | Contiguity and reference-based metrics |
+| 11 | `11_run_merqury.sh` | meryl + Merqury 1.3 | k-mer-based QV and completeness (k = 19) |
+| 12 | `12_run_nucmer_mummerplot.sh` | MUMmer 4 | Whole-genome alignments and dotplots |
+
+Jellyfish (script 07) is a Week 1 step; it was numbered after the assembly scripts because it was written later.
 
 ## Reproducibility
 
-Analysis steps are implemented as separate shell scripts and submitted as SLURM jobs on the IBU cluster.
+Each analysis step is a separate shell script submitted as a SLURM job on the IBU cluster (partition `pibu_el8`). The scripts specify input/output directories, software modules or containers and their versions, CPU and memory requests, job names, and log files. Containerised tools are run with `apptainer exec --bind /data`.
 
-The scripts specify:
+**Deviations from the script defaults** (resources passed on the command line because of queue load or memory limits):
 
-* input and output directories
-* software modules and versions
-* CPU and memory requirements
-* SLURM partition
-* job names
-* output and error files
+| Job | Resources used | Reason |
+|---|---|---|
+| LJA (`06`) | `--mem=128G --time=2-00:00:00` (now in the script) | First run failed with OUT_OF_MEMORY at 64 GB after 17.5 h; peak usage of the successful run was 81 GB |
+| BUSCO (`09`) | `sbatch --cpus-per-task=8 --mem=32G --array=0,1,3`, time limit 10 h | Smaller request to start sooner in a full queue; LJA (task 2) run separately after the LJA assembly |
+| Merqury (`11`) | `sbatch --cpus-per-task=8`, time limit 10 h | Same reason |
+| nucmer (`12`) | `sbatch --cpus-per-task=8 --mem=16G`, time limit 8 h | Same reason |
 
-The cluster partition used for the analyses is:
+Evaluation jobs for LJA were submitted with `--dependency=afterok:<LJA job ID>`. Scripts 11 and 12 skip assemblies that are missing or already processed, so they can be rerun safely.
 
-```text
-pibu_el8
-```
+---
 
-## Week 1 — Reads and QC
-
-The first week focuses on sequencing reads, quality control, and k-mer analysis.
+## Week 1: Reads and QC
 
 ### 1. Basic read statistics
 
-FastQC was used to assess the quality and characteristics of:
+FastQC (`scripts/01_run_fastqc.sh`) was used to assess the PacBio HiFi reads from Rab-R1 and the Illumina RNA-seq reads from Sha.
 
-* PacBio HiFi whole-genome reads from Rab-R1
-* Illumina RNA-seq reads from Sha
+| Dataset | Total reads | Read length | GC |
+|---|---|---|---|
+| PacBio ERR11437340 | 556,708 | 56–39,423 bp (mean ≈ 15.2 kb) | 37% |
+| RNA-seq R1 ERR754081_1 | 22,620,680 | 101 bp | 46% |
+| RNA-seq R2 ERR754081_2 | 22,620,680 | 101 bp | 46% |
 
-The FastQC module used is:
-
-```text
-FastQC/0.11.9-Java-11
-```
-
-The analysis was performed by:
-
-```text
-scripts/01_run_fastqc.sh
-```
-
-#### FastQC results
-
-| Dataset                  | Total reads |  Read length |  GC |
-| ------------------------ | ----------: | -----------: | --: |
-| PacBio `ERR11437340`     |     556,708 | 56–39,423 bp | 37% |
-| RNA-seq R1 `ERR754081_1` |  22,620,680 |       101 bp | 46% |
-| RNA-seq R2 `ERR754081_2` |  22,620,680 |       101 bp | 46% |
-
-The FastQC **Basic Statistics** module passed for all three datasets.
-
-The PacBio reads have a broad read-length distribution, as expected for long-read sequencing, whereas the RNA-seq reads are uniformly 101 bp.
+The FastQC Basic Statistics module passed for all three datasets. The PacBio reads have a broad read-length distribution, as expected for long-read sequencing, whereas the RNA-seq reads are uniformly 101 bp. The higher GC of the RNA-seq reads reflects the gene-rich content of transcripts.
 
 ### 2. Read filtering and trimming
 
-`fastp` was used to:
+fastp was used to filter and trim the Illumina RNA-seq reads (`scripts/02_run_fastp.sh`) and to obtain statistics for the PacBio HiFi reads without filtering (`scripts/03_run_fastp_pacbio.sh`).
 
-* filter and trim the Illumina RNA-seq reads
-* assess changes in read quality
-* obtain the total number of bases in the PacBio HiFi dataset without filtering
+**RNA-seq fastp results (per mate)**
 
-The Illumina RNA-seq analysis is performed by:
+| | Before | After |
+|---|---|---|
+| Reads | 22,620,680 | 20,352,421 |
+| Bases | 2,284,688,680 | 2,043,758,461 |
+| Q20 | 88.25% | 94.60% |
+| Q30 | 76.19% | 86.32% |
 
-```text
-scripts/02_run_fastp.sh
-```
+Across both mates: 40,704,842 reads passed; 4,536,276 reads failed due to low quality; 242 failed due to too many Ns; 0 were too short. 2,131,136 reads had adapters trimmed (24,329,968 bases). Duplication rate: 6.61%; insert size peak: 136 bp. Filtered reads and the HTML/JSON reports are in `read_QC/fastp/`.
 
-The PacBio analysis is performed by:
+**PacBio fastp results**
 
-```text
-scripts/03_run_fastp_pacbio.sh
-```
+The PacBio HiFi reads were processed without adapter trimming, quality filtering or length filtering; the output reads were discarded to `/dev/null`, because the goal was only to obtain sequencing statistics.
 
-#### RNA-seq fastp results
+- 556,708 reads
+- 8,455,889,868 total bases (~8.46 Gb)
+- Q20: 98.56%
+- Q30: 96.62%
 
-Before filtering, each RNA-seq mate contained:
-
-* **22,620,680 reads**
-* **2,284,688,680 bases**
-* Q20 bases: **88.25%**
-* Q30 bases: **76.19%**
-
-After filtering, each mate contained:
-
-* **20,352,421 reads**
-* **2,043,758,461 bases**
-* Q20 bases: **94.60%**
-* Q30 bases: **86.32%**
-
-Across both mates, fastp reported:
-
-* **40,704,842 reads passed the filters**
-* **4,536,276 reads failed due to low quality**
-* **242 reads failed due to too many Ns**
-* **0 reads failed due to being too short**
-* **2,131,136 reads had adapter trimming**
-* **24,329,968 bases were trimmed due to adapters**
-* Duplication rate: **6.61%**
-* Insert size peak: **136 bp**
-
-The filtered RNA-seq reads are written to:
-
-```text
-read_QC/fastp/
-```
-
-The fastp HTML and JSON reports are also stored in this directory.
-
-#### PacBio fastp results
-
-The PacBio HiFi reads were processed with `fastp` without adapter trimming, quality filtering, or length filtering. The output reads were discarded to `/dev/null` because the purpose of this step was to obtain sequencing statistics rather than produce a filtered FASTQ file.
-
-Results:
-
-* **556,708 reads**
-* **8,455,889,868 total bases (~8.46 Gb)**
-* Q20 bases: **8,334,149,991 (98.56%)**
-* Q30 bases: **8,170,018,339 (96.62%)**
+HiFi reads are already highly accurate, so no trimming was needed.
 
 ### 3. Expected PacBio coverage
 
-The expected sequencing coverage was estimated using:
-
-```text
+```
 coverage = total sequenced bases / expected genome size
+         = 8,455,889,868 / 135,000,000 ≈ 62.6×
 ```
 
-Using an approximate *Arabidopsis thaliana* genome size of 135 Mb:
+### 4. K-mer counting and GenomeScope
 
-```text
-8,455,889,868 / 135,000,000 ≈ 62.6×
-```
+K-mers were counted from the PacBio HiFi reads with Jellyfish 2.3.0 (`scripts/07_run_jellyfish.sh`), using k = 21 and canonical k-mers (`-C`). The histogram (`read_QC/kmer_counting/ERR11437340.k21.histo`) was analysed with GenomeScope 2.0 (k = 21, ploidy = 2).
 
-Therefore, the expected PacBio sequencing coverage is approximately **62.6×**.
+| Metric | Result |
+|---|---|
+| Estimated genome size | ~144.6 Mb |
+| Unique sequence content | 72.8% |
+| Heterozygosity | 0.11% |
+| kcov (haploid k-mer coverage) | 20.4× |
+| Sequencing error rate | 0.174% |
+| Duplication | 0.176 |
 
-### 4. K-mer counting
+![GenomeScope linear plot](figures/genomescope_linear.png)
 
-K-mers were counted from the PacBio HiFi reads using Jellyfish.
+**Interpretation**
 
-The Jellyfish version available on the cluster is:
+- **Peaks.** The steep peak at very low coverage consists of k-mers containing sequencing errors. GenomeScope's kcov (20.4×) is the haploid k-mer coverage. The homozygous peak is therefore expected at 2 × kcov ≈ 41×, which matches the main observed peak at ~40×. The small shoulder at ~20× corresponds to heterozygous k-mers.
+- **Heterozygosity.** 0.11% is very low, as expected for *A. thaliana*: it is predominantly self-fertilising, so accessions are nearly homozygous.
+- **Genome size.** 144.6 Mb is ~7% above the ~135 Mb expected; k-mer estimates are sensitive to repeat content and to the coverage cutoffs used.
+- **Coverage: 62.6× vs ~40×.** For long reads, k-mer coverage is close to base coverage, so the difference is not due to the k-mer length. The total base count also includes reads from organelles (chloroplast, mitochondria) and high-copy repeats (rDNA, centromeric satellites), which appear as the high-multiplicity tail (1,000–10,000×) in the log-scale GenomeScope plots. The ~40× peak is therefore the effective single-copy nuclear coverage. The weighted mean multiplicity of the histogram (61.57×) is dominated by error k-mers and high-copy k-mers and is not a meaningful coverage estimate; its similarity to 62.6× is likely coincidental.
 
-```text
-Jellyfish/2.3.0-GCC-10.3.0
-```
+### Week 1 questions
 
-The analysis was performed by:
+**What are the read lengths of the different datasets?** PacBio HiFi: 56–39,423 bp (mean ≈ 15.2 kb). RNA-seq: 101 bp.
 
-```text
-scripts/07_run_jellyfish.sh
-```
+**Are the datasets of good quality?** Yes. FastQC Basic Statistics passed for all datasets, and 96.6% of HiFi bases are ≥ Q30.
 
-The workflow:
+**How many RNA-seq reads were trimmed or filtered? Did the quality improve?** 4,536,518 reads failed filtering across both mates (4,536,276 low quality, 242 too many Ns), and 2,131,136 reads had adapter trimming. Q30 increased from 76.19% to 86.32%.
 
-1. Counted k-mers using a k-mer size of 21.
-2. Used canonical k-mers with the `-C` option.
-3. Generated a k-mer histogram.
-4. Prepared the histogram for GenomeScope 2.0 analysis.
+**What is the expected PacBio coverage?** ~62.6× (total bases / 135 Mb); effective single-copy k-mer coverage ~40×.
 
-The Jellyfish output files are:
+**What are canonical k-mers?** A k-mer and its reverse complement are counted as the same k-mer (Jellyfish `-C`). This is needed because reads come from both DNA strands, and we do not know which strand a given read was sequenced from.
 
-```text
-read_QC/kmer_counting/ERR11437340.k21.jf
-read_QC/kmer_counting/ERR11437340.k21.histo
-```
+---
 
-The main k-mer histogram peak occurs at approximately **40× k-mer multiplicity**.
+## Week 2: Genome and transcriptome assembly
 
-The weighted mean k-mer multiplicity calculated from the histogram is approximately **61.57×**.
+### Genome assemblies
 
-The 40× value represents the main observed peak in the k-mer histogram and should not be confused with the GenomeScope mean k-mer coverage estimate.
+Three assemblers were run on the same HiFi reads (`scripts/04`–`06`). hifiasm writes GFA; the primary contigs (`Rab-R1.bp.p_ctg.gfa`) were converted to FASTA with `awk '/^S/{print ">"$2;print $3}'`.
 
-## GenomeScope 2.0
+| Metric | Flye | hifiasm (primary) | LJA |
+|---|---|---|---|
+| Total length | 147.2 Mb | 188.9 Mb | 155.6 Mb |
+| Contigs | 170 | 1,233 | 763 |
+| Largest contig | 11.11 Mb | 14.18 Mb | 16.03 Mb |
+| N50 | 3.31 Mb | 6.41 Mb | — |
+| NG50 (G = 135 Mb) | 4.40 Mb | 8.42 Mb | 8.84 Mb |
+| Run time / peak memory | 4.3 h / 34 GB | 51 min / 18 GB | 18.4 h / 81 GB |
 
-The k-mer histogram was analyzed using GenomeScope 2.0 with:
+- **Flye** produced an assembly close to the GenomeScope estimate (144.6 Mb), but it is the least contiguous.
+- **hifiasm** is ~44 Mb larger than expected, with many small contigs (see QUAST duplication ratio and BUSCO below).
+- **LJA** reached the highest NG50 but required far more memory: 64 GB was not enough.
 
-* **k-mer size:** 21
-* **Ploidy:** 2
+### Transcriptome assembly (Trinity)
 
-GenomeScope estimated:
+Trinity 2.15.1 was run on the fastp-trimmed Sha RNA-seq reads (`scripts/08_trinity_assembly.sh`).
 
-| Metric                  |    Result |
-| ----------------------- | --------: |
-| Estimated genome size   | ~144.6 Mb |
-| Unique sequence content |     72.8% |
-| Heterozygosity          |     0.11% |
-| Mean k-mer coverage     |     20.4× |
-| Sequencing error rate   |    0.174% |
-| Duplication rate        |     0.176 |
+| Metric | Value |
+|---|---|
+| Trinity "genes" | 25,125 |
+| Transcripts | 42,566 (~1.7 isoforms per gene) |
+| Contig N50 | 1,876 bp |
+| Total assembled bases | 57.4 Mb (GC 41.9%) |
+| Run time / peak memory | 4.4 h / 34 GB |
 
-The estimated genome size of approximately **144.6 Mb** is somewhat larger than the approximate **135 Mb** genome size expected for *Arabidopsis thaliana*.
+The number of Trinity "genes" is close to the ~27,000 protein-coding genes annotated in *A. thaliana*.
 
-The estimated heterozygosity of **0.11%** indicates a low level of heterozygosity. This is consistent with the small heterozygous shoulder observed around **20×** in the k-mer profile.
+### Week 2 questions
 
-The main observed k-mer peak is around **40×**, while GenomeScope reports a mean k-mer coverage of **20.4×**. These values describe different aspects of the k-mer distribution and should not be treated as interchangeable.
+**What is the difference between a contig and a scaffold?** A contig is a continuous, gap-free sequence built from overlapping reads. A scaffold is a set of contigs ordered and oriented using additional information (paired/mate-pair reads, Hi-C, optical maps or a reference), with gaps between them filled with Ns.
 
-The GenomeScope k-mer profile is shown below:
-<img width="688" height="713" alt="histogram" src="https://github.com/user-attachments/assets/0004153a-291b-417e-859b-be959e0a269a" />
+**Why can repeats make assembly difficult, and why are long reads useful?** Repeats occur in several places, so reads from them fit in multiple positions and create branches in the assembly graph; the assembler cannot tell which unique flanks are connected. A repeat can only be resolved if a read spans it completely and reaches unique sequence on both sides. Long reads span most repeats.
 
-## Genome assembly
+**What happens at very low or very high coverage?** Low coverage leaves regions unsequenced (Lander–Waterman: gaps decrease exponentially with coverage), giving fragmented assemblies and lower base accuracy. Very high coverage increases compute time and memory and accumulates more erroneous and redundant reads, which can complicate the graph without improving the result.
 
-Genome assemblies will be generated using several assemblers and compared as part of the course analysis.
+**What is the role of error correction? Is it needed for HiFi?** Error correction removes sequencing errors so that true overlaps are found and the correct sequence is reconstructed (errors create bubbles and tips in the graph). HiFi reads are already ~99.9% accurate, so separate error correction is usually not necessary.
 
-The planned assembly tools are:
+**Why record the exact command, version and parameters?** For reproducibility. Algorithms and default parameters change between versions, and the same data can give different assemblies; exact records also make troubleshooting possible.
 
-* Flye
-* hifiasm
-* LJA
+**Why might two students obtain different assemblies from the same reads?** Different software versions, parameters, read preprocessing, or resources; some steps are also non-deterministic, for example because of multithreading.
 
-The corresponding scripts are:
+**What is the fundamental difference between genome and transcriptome assembly?** A genome assembly reconstructs the DNA of the organism; it is (ideally) one sequence per chromosome with roughly uniform coverage. A transcriptome assembly reconstructs the RNA transcripts expressed in a particular sample, which depends on tissue, developmental stage and condition.
 
-```text
-scripts/04_flye_assembly.sh
-scripts/05_hifiasm_assembly.sh
-scripts/06_lja_assembly.sh
-```
+**Why is transcriptome assembly more complicated than assembling all reads into one sequence?** Alternative splicing produces several transcripts per gene that share exons, so the assembler must decide which exon combinations are real. Expression levels vary by orders of magnitude between genes, and reads from paralogs can be confused.
 
-Assembly results will be evaluated using assembly statistics and other quality measures as required by the course.
+---
 
-## Week 1 results
+## Week 3: Assembly evaluation and comparison
 
-| Metric                            | Result                      |
-| --------------------------------- | --------------------------- |
-| PacBio read length                | 56–39,423 bp                |
-| Illumina read length              | 101 bp                      |
-| RNA-seq reads before filtering    | 22,620,680 per mate         |
-| RNA-seq reads after filtering     | 20,352,421 per mate         |
-| RNA-seq reads failed filtering    | 4,536,518 combined          |
-| RNA-seq Q20 before filtering      | 88.25%                      |
-| RNA-seq Q20 after filtering       | 94.60%                      |
-| RNA-seq Q30 before filtering      | 76.19%                      |
-| RNA-seq Q30 after filtering       | 86.32%                      |
-| PacBio total bases                | 8,455,889,868 bp (~8.46 Gb) |
-| PacBio Q20                        | 98.56%                      |
-| PacBio Q30                        | 96.62%                      |
-| Expected genome size              | ~135 Mb                     |
-| Expected PacBio coverage          | ~62.6×                      |
-| Main k-mer peak (k=21)            | ~40×                        |
-| Weighted mean k-mer multiplicity  | 61.57×                      |
-| GenomeScope estimated genome size | ~144.6 Mb                   |
-| GenomeScope heterozygosity        | 0.11%                       |
-| GenomeScope mean k-mer coverage   | 20.4×                       |
+### BUSCO (brassicales_odb10, n = 4,596)
 
-## Questions
+| Assembly | Complete | Single | Duplicated | Fragmented | Missing |
+|---|---|---|---|---|---|
+| Flye | 100.0% | 99.0% | 1.0% | 0.1% | 0.1% |
+| hifiasm | 98.1% | 97.1% | 1.0% | 0.0% | 1.9% |
+| LJA | 100.0% | 99.0% | 1.0% | 0.1% | 0.1% |
+| Trinity (transcriptome) | 78.8% | 39.4% | 39.4% | 3.6% | 17.6% |
 
-### Read quality
+Flye and LJA recover essentially the full gene space; hifiasm misses 1.9% of BUSCOs despite being the largest assembly. In all three genome assemblies duplicated BUSCOs are only 1.0%, so hifiasm's extra sequence is not duplicated genes. Trinity's high duplicated fraction is expected: several isoforms of one gene are each counted as a copy. Its missing BUSCOs correspond to genes not expressed in the sequenced sample.
 
-* What are the read lengths of the different datasets?
-* Are the datasets of good quality?
-* How many RNA-seq reads were trimmed or filtered?
-* Did the quality improve after filtering?
+### QUAST (with TAIR10 reference)
 
-The FastQC Basic Statistics module passed for all three input datasets. For the RNA-seq data, Q20 increased from 88.25% to 94.60% and Q30 increased from 76.19% to 86.32% after filtering, indicating an improvement in the quality of the retained reads.
+| Metric | Flye | hifiasm | LJA |
+|---|---|---|---|
+| NG50 (reference length) | 5.91 Mb | 8.72 Mb | 10.10 Mb |
+| Genome fraction | 87.7% | 86.2% | 87.8% |
+| Duplication ratio | 1.064 | 1.479 | 1.133 |
+| Misassemblies | 4,908 | 5,035 | 5,678 |
 
-Across both RNA-seq mates, **4,536,518 reads failed filtering**, consisting of 4,536,276 reads failing due to low quality and 242 reads failing due to too many Ns.
+- **Duplication ratio.** hifiasm's ratio of 1.48 means ~48% more aligned sequence than reference covered, confirming that its extra length is redundant sequence. Together with the 1% duplicated BUSCOs, this indicates that the duplicates are non-genic, most likely repeat-rich regions.
+- **Misassemblies and genome fraction.** Rab-R1 is a different accession from the Col-0 reference, so real structural variants and divergent repeat regions (e.g. centromeres) are counted as "misassemblies" and lower the genome fraction. These values are therefore only useful for comparing the three assemblers, not as absolute error counts.
 
-Adapter trimming was reported separately by fastp: **2,131,136 reads** had adapter trimming and **24,329,968 adapter bases** were removed.
+### Merqury (k = 19, read k-mers from HiFi data)
 
-### PacBio coverage
+| Assembly | QV | k-mer completeness |
+|---|---|---|
+| Flye | 61.6 | 99.00% |
+| hifiasm | 52.7 | 97.43% |
+| LJA | 50.3 | 99.07% |
 
-The expected PacBio coverage was calculated from the total number of sequenced bases and the expected *Arabidopsis thaliana* genome size.
+Flye has the highest consensus accuracy (QV 61.6 ≈ 1 error per 1.4 Mb). hifiasm has lower k-mer completeness despite its larger size: the extra sequence is redundant, and some genome sequence is missing.
 
-The estimated coverage is approximately **62.6×**.
+| Flye | hifiasm | LJA |
+|---|---|---|
+| ![](figures/merqury_flye_spectra-cn.png) | ![](figures/merqury_hifiasm_spectra-cn.png) | ![](figures/merqury_lja_spectra-cn.png) |
 
-### GenomeScope
+In all three assemblies, most k-mers are present once in the assembly (red), with a single peak at ~40×, the same coverage as the GenomeScope homozygous peak. The grey peak at low multiplicity corresponds to sequencing-error k-mers found only in the reads, as expected. The small blue hump at ~80× (k-mers present twice in the assembly at twice the coverage) represents genuine two-copy sequence and looks the same for all three assemblers. Only hifiasm shows a grey bump under the main red peak (~25–55×): these are genuine genomic k-mers that are missing from the assembly, consistent with its lower k-mer completeness (97.4% vs ~99%) and 1.9% missing BUSCOs. hifiasm shows no 2-copy (blue) peak at ~40×, so its extra ~44 Mb is not a duplicated copy of single-copy regions (no retained haplotigs). Together with the QUAST duplication ratio (1.48), this suggests the redundant sequence comes from repetitive regions.
 
-The k-mer histogram was analyzed with GenomeScope 2.0 using a k-mer size of 21 and a diploid model.
+### Whole-genome alignment (nucmer + mummerplot)
 
-GenomeScope estimated a genome size of approximately **144.6 Mb**, compared with the approximate expected *Arabidopsis thaliana* genome size of **135 Mb**.
+Each assembly was aligned to TAIR10, and the assemblies were aligned pairwise (`--breaklen 1000 --mincluster 1000`).
 
-The estimated heterozygosity was **0.11%**, and the mean k-mer coverage estimated by GenomeScope was **20.4×**.
+| Flye vs TAIR10 | hifiasm vs TAIR10 | LJA vs TAIR10 |
+|---|---|---|
+| ![](figures/flye_vs_reference.png) | ![](figures/hifiasm_vs_reference.png) | ![](figures/lja_vs_reference.png) |
 
-The main observed k-mer histogram peak was approximately **40×**.
+All three assemblies are highly collinear with TAIR10: each of the five chromosomes appears as a near-continuous forward-strand diagonal (purple), and no large inversions or translocations along the chromosome arms are visible at this scale. The diagonal is split into several contig blocks, with small offsets and gaps mostly at chromosome ends and pericentromeric regions, where repeats (centromeric satellites, rDNA) are hard to assemble and differ most between accessions. The scattered off-diagonal points (forward and reverse) are short matches to repetitive elements such as transposons. Many short contigs at the top of the y-axis do not align along the diagonal. There are noticeably more of these for hifiasm, consistent with its large number of small, redundant contigs. Overall, the large-scale genome structure of Rab-R1 matches Col-0, in line with Lian et al. (2024), who found the A. thaliana karyotype to be highly conserved, with rearrangements concentrated around centromeres.
 
-### Canonical k-mers
+### Summary
 
-Canonical k-mers treat a k-mer and its reverse complement as the same k-mer. This reduces redundant counting of the two possible orientations of the same sequence.
-
-The Jellyfish k-mer counting step used the `-C` option to count canonical k-mers.
+- All three assemblers recovered the gene space almost completely (BUSCO ≥ 98%), so they differ mainly in repetitive, non-genic regions.
+- There is a trade-off between contiguity and accuracy: LJA is the most contiguous (highest NG50) but has the lowest QV; Flye is the most accurate (highest QV, size closest to expectation) but the least contiguous.
+- hifiasm inflated the assembly by ~44 Mb with redundant, non-genic sequence (duplication ratio 1.48, BUSCO D 1%). This is consistent with the purging step (purge_dups) applied to hifiasm output in the published *A. thaliana* pan-genome (Lian et al. 2024).
+- LJA required > 64 GB of memory (peak 81 GB) for this ~145 Mb genome at ~60× coverage.
+- The same patterns were observed across the other accessions in our group, indicating that they reflect the assemblers rather than the Rab-R1 sample.
 
 ## References
 
-Lian, Q. et al. (2024). A pan-genome of 69 *Arabidopsis thaliana* accessions reveals a conserved genome structure throughout the global species range. *Nature Genetics*, 56, 982–991.
-
-Jiao, W. B. & Schneeberger, K. (2020). Chromosome-level assemblies of multiple Arabidopsis genomes reveal hotspots of rearrangements with altered evolutionary dynamics. *Nature Communications*, 11.
-
-GenomeScope 2.0.
-
+- Lian, Q. et al. (2024). A pan-genome of 69 *Arabidopsis thaliana* accessions reveals a conserved genome structure throughout the global species range. *Nature Genetics*, 56, 982–991.
+- Jiao, W. B. & Schneeberger, K. (2020). Chromosome-level assemblies of multiple *Arabidopsis* genomes reveal hotspots of rearrangements with altered evolutionary dynamics. *Nature Communications*, 11, 989.
+- Ranallo-Benavidez, T. R., Jaron, K. S. & Schatz, M. C. (2020). GenomeScope 2.0 and Smudgeplot for reference-free profiling of polyploid genomes. *Nature Communications*, 11, 1432.
+- Kolmogorov, M. et al. (2019). Assembly of long, error-prone reads using repeat graphs. *Nature Biotechnology*, 37, 540–546.
+- Cheng, H. et al. (2021). Haplotype-resolved de novo assembly using phased assembly graphs with hifiasm. *Nature Methods*, 18, 170–175.
+- Bankevich, A. et al. (2022). Multiplex de Bruijn graphs enable genome assembly from long, high-fidelity reads. *Nature Biotechnology*, 40, 1075–1081.
+- Grabherr, M. G. et al. (2011). Full-length transcriptome assembly from RNA-Seq data without a reference genome. *Nature Biotechnology*, 29, 644–652.
+- Manni, M. et al. (2021). BUSCO update. *Molecular Biology and Evolution*, 38, 4647–4654.
+- Mikheenko, A. et al. (2018). Versatile genome assembly evaluation with QUAST-LG. *Bioinformatics*, 34, i142–i150.
+- Rhie, A. et al. (2020). Merqury: reference-free quality, completeness, and phasing assessment for genome assemblies. *Genome Biology*, 21, 245.
+- Marçais, G. et al. (2018). MUMmer4: a fast and versatile genome alignment system. *PLoS Computational Biology*, 14, e1005944.
 
 GenomeScope 2.0.
 
